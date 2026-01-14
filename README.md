@@ -1,0 +1,1 @@
+# generate-pricetag-kenari-djaja
