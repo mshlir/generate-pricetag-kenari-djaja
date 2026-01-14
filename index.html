@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Card Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            color: #2d3748;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 1.1em;
+            margin-bottom: 25px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 25px;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn-primary {
+            background: #3b82f6;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-purple {
+            background: #8b5cf6;
+            color: white;
+        }
+
+        .btn-purple:hover {
+            background: #7c3aed;
+        }
+
+        .info-box {
+            background: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .info-box h3 {
+            color: #1e40af;
+            margin-bottom: 12px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            color: #1e3a8a;
+        }
+
+        .info-box li {
+            margin: 8px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .info-box li:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+            font-weight: bold;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 60px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .cards-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+            justify-content: flex-start;
+        }
+
+        .product-card {
+            background: white;
+            width: 6cm;
+            height: 3.5cm;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: transform 0.3s;
+            border-radius: 4px;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 15px rgba(0,0,0,0.2);
+        }
+
+        .card-header {
+            background: #e5e7eb;
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 10px;
+            color: #4b5563;
+            font-weight: 600;
+        }
+
+        .card-body {
+            background: #000;
+            color: white;
+            padding: 20px 15px;
+            height: calc(3.5cm - 22px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .card-title {
+            font-size: 0.75em;
+            font-weight: bold;
+            margin-bottom: 4px;
+            line-height: 1.2;
+        }
+
+        .card-description {
+            font-size: 0.55em;
+            color: #d1d5db;
+            margin-bottom: 6px;
+        }
+
+        .card-color {
+            font-size: 0.6em;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .card-price {
+            font-size: 1em;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 80px;
+            background: white;
+            border-radius: 12px;
+        }
+
+        .empty-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+
+        input[type="file"] {
+            display: none;
+        }
+
+        .result-header {
+            color: white;
+            font-size: 1.8em;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Product Card Generator</h1>
+            <p class="subtitle">Upload file Excel untuk membuat kartu produk secara otomatis</p>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="document.getElementById('fileInput').click()">
+                    📤 Upload Excel
+                </button>
+                <button class="btn-success" onclick="downloadTemplate()">
+                    📋 Download Template
+                </button>
+                <button class="btn-purple" id="downloadBtn" onclick="downloadImages()" style="display:none;">
+                    💾 Download Semua Gambar
+                </button>
+            </div>
+
+            <input type="file" id="fileInput" accept=".xlsx,.xls" onchange="handleFileUpload(event)">
+
+            <div class="info-box">
+                <h3>📝 Format Excel yang dibutuhkan:</h3>
+                <ul>
+                    <li><strong>Brand</strong>: Merek produk (contoh: KEND)</li>
+                    <li><strong>PLU</strong>: Kode PLU produk (contoh: 015130102)</li>
+                    <li><strong>Item Name</strong>: Nama produk (contoh: D PROOF STRIKE)</li>
+                    <li><strong>Description</strong>: Deskripsi tambahan (08610-10)</li>
+                    <li><strong>Color</strong>: Warna produk (contoh: BLACK, GREY)</li>
+                    <li><strong>Harga</strong>: Harga dalam angka (contoh: 174000)</li>
+                </ul>
+            </div>
+        </div>
+
+        <div id="loading" class="loading" style="display:none;">
+            <div class="spinner"></div>
+            <p style="color: #4b5563; font-size: 1.1em;">Memproses file Excel...</p>
+        </div>
+
+        <div id="results" style="display:none;">
+            <h2 class="result-header" id="resultTitle"></h2>
+            <div id="cardsContainer" class="cards-grid"></div>
+        </div>
+
+        <div id="emptyState" class="empty-state">
+            <div class="empty-icon">🖼️</div>
+            <h3 style="color: #374151; font-size: 1.5em; margin-bottom: 10px;">Belum ada kartu produk</h3>
+            <p style="color: #6b7280;">Upload file Excel atau download template untuk memulai</p>
+        </div>
+    </div>
+
+    <script>
+        let products = [];
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('results').style.display = 'none';
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                    products = jsonData.map((row, index) => ({
+                        id: index + 1,
+                        brand: row['Brand'] || row['brand'] || 'PRODUK',
+                        plu: row['PLU'] || row['plu'] || '',
+                        itemName: row['Item Name'] || row['item name'] || row['Item name'] || '',
+                        description: row['Description'] || row['description'] || '',
+                        color: row['Color'] || row['color'] || 'BLACK',
+                        price: row['Harga'] || row['Price'] || row['harga'] || row['price'] || 0
+                    }));
+
+                    displayProducts();
+                } catch (error) {
+                    alert('Error membaca file Excel: ' + error.message);
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayProducts() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('downloadBtn').style.display = 'flex';
+
+            document.getElementById('resultTitle').textContent = `Hasil: ${products.length} Kartu Produk`;
+
+            const container = document.getElementById('cardsContainer');
+            container.innerHTML = '';
+
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.setAttribute('data-product-card', '');
+                
+                card.innerHTML = `
+                    <div class="card-header">
+                        <span>${product.brand}</span>
+                        <span>${product.plu}</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title">${product.itemName}</div>
+                        ${product.description ? `<div class="card-description">${product.description}</div>` : ''}
+                        <div class="card-color">${product.color}</div>
+                        <div class="card-price">${formatPrice(product.price)}</div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+
+        function formatPrice(price) {
+            return new Intl.NumberFormat('id-ID', {
+                style: 'currency',
+                currency: 'IDR',
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            }).format(price);
+        }
+
+        async function downloadImages() {
+            if (products.length === 0) return;
+
+            document.getElementById('loading').style.display = 'block';
+            const cards = document.querySelectorAll('[data-product-card]');
+
+            for (let i = 0; i < cards.length; i++) {
+                try {
+                    const canvas = await html2canvas(cards[i], {
+                        backgroundColor: '#ffffff',
+                        scale: 2,
+                        logging: false
+                    });
+
+                    canvas.toBlob((blob) => {
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.download = `product-card-${i + 1}.png`;
+                        link.href = url;
+                        link.click();
+                        URL.revokeObjectURL(url);
+                    });
+
+                    await new Promise(resolve => setTimeout(resolve, 300));
+                } catch (error) {
+                    console.error('Error downloading card:', error);
+                }
+            }
+
+            document.getElementById('loading').style.display = 'none';
+            alert(`Berhasil download ${cards.length} gambar produk!`);
+        }
+
+        function downloadTemplate() {
+            const template = [
+                {
+                    'Brand': 'PRODUK',
+                    'PLU': '08912M',
+                    'Item Name': 'D PROOF STRIKE 08912 M',
+                    'Description': '',
+                    'Color': 'BLACK',
+                    'Harga': 174000
+                },
+                {
+                    'Brand': 'PRODUK',
+                    'PLU': '08610-10',
+                    'Item Name': 'D CYLINDER 08610-10',
+                    'Description': '',
+                    'Color': 'BLACK',
+                    'Harga': 239000
+                },
+                {
+                    'Brand': 'PRODUK',
+                    'PLU': '1131',
+                    'Item Name': 'INVISIBLE HINGE 1131',
+                    'Description': 'MATT BLACK',
+                    'Color': 'BLACK',
+                    'Harga': 1979000
+                }
+            ];
+
+            const ws = XLSX.utils.json_to_sheet(template);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Products');
+            XLSX.writeFile(wb, 'template_produk.xlsx');
+        }
+    </script>
+</body>
+</html>
